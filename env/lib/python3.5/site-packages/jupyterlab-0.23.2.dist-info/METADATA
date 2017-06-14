@@ -1,0 +1,37 @@
+Metadata-Version: 2.0
+Name: jupyterlab
+Version: 0.23.2
+Summary: An alpha preview of the JupyterLab notebook server extension.
+Home-page: http://jupyter.org
+Author: Jupyter Development Team
+Author-email: jupyter@googlegroups.com
+License: BSD
+Keywords: ipython,jupyter,Web
+Platform: Linux
+Platform: Mac OS X
+Platform: Windows
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: System Administrators
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: OSI Approved :: BSD License
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.3
+Classifier: Programming Language :: Python :: 3.4
+Classifier: Programming Language :: Python :: 3.5
+Requires-Dist: jupyterlab-launcher (>=0.2.8)
+Requires-Dist: notebook (>=4.3.1)
+Provides-Extra: docs
+Requires-Dist: recommonmark; extra == 'docs'
+Requires-Dist: sphinx; extra == 'docs'
+Requires-Dist: sphinx-rtd-theme; extra == 'docs'
+Provides-Extra: test
+Requires-Dist: pytest; extra == 'test'
+Provides-Extra: test
+Requires-Dist: mock; python_version == "2.7" and extra == 'test'
+
+This is an alpha preview of JupyterLab. It is not ready for general usage yet. Development happens on https://github.com/jupyter/jupyterlab, with chat on https://gitter.im/jupyter/jupyterlab.
+
+
