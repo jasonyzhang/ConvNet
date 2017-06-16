@@ -1,0 +1,2 @@
+model_checkpoint_path: "neural-net-model"
+all_model_checkpoint_paths: "neural-net-model"
