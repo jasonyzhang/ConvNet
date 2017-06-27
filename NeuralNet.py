@@ -12,13 +12,23 @@ class NeuralNet(object):
         self.lamb = lamb
 
     def initialize(self):
+        # Hyper-parameters
 
+        # Fully connected layers size
         FC_DIM_1 = 1024
         FC_DIM_2 = 512
 
-        self.inputs = tf.placeholder(tf.float32, shape=(None, 784))
-        self.labels = tf.placeholder(tf.float32, shape=[None, 26])
-        self.keep = tf.placeholder(tf.float32)
+        # batch normalization
+        epsilon = 1e-3
+
+        # Variables
+        self.inputs = tf.placeholder(tf.float32,
+                                     shape=(None, 784),
+                                     name='input')
+        self.labels = tf.placeholder(tf.float32,
+                                     shape=[None, 26],
+                                     name='labels')
+        self.keep = tf.placeholder(tf.float32, name='keep')
 
         self.W_conv_1 = tf.Variable(tf.truncated_normal(
             shape=[5, 5, 1, 32],
@@ -59,6 +69,13 @@ class NeuralNet(object):
 
         self.b_fc_3 = tf.Variable(np.zeros(26).astype(np.float32))
 
+        # Scale and shift for batch normalization
+        self.scale1 = tf.Variable(tf.ones([FC_DIM_1]))
+        self.beta1 = tf.Variable(tf.zeros([FC_DIM_1]))
+        self.scale2 = tf.Variable(tf.ones([FC_DIM_2]))
+        self.beta2 = tf.Variable(tf.zeros([FC_DIM_2]))
+
+
         self.input_layer = tf.reshape(self.inputs, [-1, 28, 28, 1])
 
         h_conv_1 = tf.nn.relu(tf.nn.conv2d(
@@ -89,30 +106,39 @@ class NeuralNet(object):
             padding='SAME'
         ), [-1, 7 * 7 * 64])
 
-        h_fc_1 = tf.nn.relu(tf.matmul(h_pool_2, self.W_fc_1) + self.b_fc_1)
+        z_bn_1 = tf.matmul(h_pool_2, self.W_fc_1)
+        batch_mean_1, batch_var_1 = tf.nn.moments(z_bn_1, [0])
+        h_bn_1 = tf.nn.batch_normalization(
+            x=z_bn_1,
+            mean=batch_mean_1,
+            variance=batch_var_1,
+            offset=self.beta1,
+            scale=self.scale1,
+            variance_epsilon=epsilon
+        )
+        h_fc_1 = tf.nn.relu(h_bn_1 + self.b_fc_1)
         h_drop_1 = tf.nn.dropout(h_fc_1, self.keep)
 
-        h_fc_2 = tf.nn.relu(tf.matmul(h_drop_1, self.W_fc_2) + self.b_fc_2)
+        z_bn_2 = tf.matmul(h_drop_1, self.W_fc_2)
+        batch_mean_2, batch_var_2 = tf.nn.moments(z_bn_2, [0])
+        h_bn_2 = tf.nn.batch_normalization(
+            x=z_bn_2,
+            mean=batch_mean_2,
+            variance=batch_var_2,
+            offset=self.beta2,
+            scale=self.scale2,
+            variance_epsilon=epsilon
+        )
+
+        h_fc_2 = tf.nn.relu(h_bn_2 + self.b_fc_2)
         h_drop_2 = tf.nn.dropout(h_fc_2, self.keep)
 
         logits = tf.matmul(h_drop_2, self.W_fc_3) + self.b_fc_3
         cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
             logits=logits, labels=self.labels
         ))
-        """
-        self.saver = tf.train.Saver({
-            'W_conv_1', self.W_conv_1,
-            'b_conv_1', self.b_conv_1,
-            'W_conv_2', self.W_conv_2,
-            'b_conv_2', self.b_conv_2,
-            'W_fc_1', self.W_fc_1,
-            'b_fc_1', self.b_fc_1,
-            'W_fc_2', self.W_fc_2,
-            'b_fc_2', self.b_fc_2,
-            'W_fc_3', self.W_fc_3,
-            'b_fc_3', self.b_fc_3,
-        })"""
 
+        self.saver = tf.train.Saver()
         self.predict = logits
         return cost
 
@@ -187,14 +213,16 @@ class NeuralNet(object):
                     self.keep: keep_prob
                 })
 
-            validation_pred = session.run(self.predict, {
-                self.inputs: vx,
-                self.labels: vy,
-                self.keep: 1.
-            })
-            validation_err = error(np.argmax(validation_pred, 1),
-                                   np.argmax(vy, 1))
-            print 'validation acc:', 1 - validation_err
+                #self.saver.save(session, 'model-1')
+                if i % 1000 == 999:
+                    validation_pred = session.run(self.predict, {
+                        self.inputs: vx,
+                        self.labels: vy,
+                        self.keep: 1.
+                    })
+                    validation_err = error(np.argmax(validation_pred, 1),
+                                           np.argmax(vy, 1))
+                    print 'validation acc:', 1 - validation_err
 
 
 
