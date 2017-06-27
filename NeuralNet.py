@@ -9,81 +9,78 @@ class NeuralNet(object):
     def __init__(self, save_file, lamb):
 
         self.save_file = save_file
+        
+        # Hyper-parameters
+        # Fully connected layers size
+        self.FC_DIM_1 = 1024
+        self.FC_DIM_2 = 512
+
+        # l2 regularization
         self.lamb = lamb
 
-    def initialize(self):
-        # Hyper-parameters
-
-        # Fully connected layers size
-        FC_DIM_1 = 1024
-        FC_DIM_2 = 512
-
         # batch normalization
-        epsilon = 1e-3
+        self.epsilon = 1e-3
+
+    def build_graph(self, training=True):
 
         # Variables
-        self.inputs = tf.placeholder(tf.float32,
+        inputs = tf.placeholder(tf.float32,
                                      shape=(None, 784),
                                      name='input')
-        self.labels = tf.placeholder(tf.float32,
+        labels = tf.placeholder(tf.float32,
                                      shape=[None, 26],
                                      name='labels')
-        self.keep = tf.placeholder(tf.float32, name='keep')
+        keep = tf.placeholder(tf.float32, name='keep')
 
-        self.W_conv_1 = tf.Variable(tf.truncated_normal(
+        W_conv_1 = tf.Variable(tf.truncated_normal(
             shape=[5, 5, 1, 32],
             mean=0.,
             stddev=0.1,
         ))
-        self.b_conv_1 = tf.Variable(np.zeros(32).astype(np.float32))
+        b_conv_1 = tf.Variable(np.zeros(32).astype(np.float32))
 
-        self.W_conv_2 = tf.Variable(tf.truncated_normal(
+        W_conv_2 = tf.Variable(tf.truncated_normal(
             shape=[5, 5, 32, 64],
             mean=0.,
             stddev=0.1,
         ))
 
-        self.b_conv_2 = tf.Variable(np.zeros(64).astype(np.float32))
+        b_conv_2 = tf.Variable(np.zeros(64).astype(np.float32))
 
-        self.W_fc_1 = tf.Variable(tf.truncated_normal(
-            shape=[7 * 7 * 64, FC_DIM_1],
+        W_fc_1 = tf.Variable(tf.truncated_normal(
+            shape=[7 * 7 * 64, self.FC_DIM_1],
             mean=0.,
             stddev=1./8.
         ))
 
-        self.b_fc_1 = tf.Variable(np.zeros(FC_DIM_1).astype(np.float32))
+        b_fc_1 = tf.Variable(np.zeros(self.FC_DIM_1).astype(np.float32))
 
-        self.W_fc_2 = tf.Variable(tf.truncated_normal(
-            shape=[FC_DIM_1, FC_DIM_2],
+        W_fc_2 = tf.Variable(tf.truncated_normal(
+            shape=[self.FC_DIM_1, self.FC_DIM_2],
             mean=0.,
-            stddev=1./np.sqrt(FC_DIM_1)
+            stddev=1./np.sqrt(self.FC_DIM_1)
         ))
 
-        self.b_fc_2 = tf.Variable(np.zeros(FC_DIM_2).astype(np.float32))
+        b_fc_2 = tf.Variable(np.zeros(self.FC_DIM_2).astype(np.float32))
 
-        self.W_fc_3 = tf.Variable(tf.truncated_normal(
-            shape=[FC_DIM_2, 26],
+        W_fc_3 = tf.Variable(tf.truncated_normal(
+            shape=[self.FC_DIM_2, 26],
             mean=0.,
-            stddev=1./np.sqrt(FC_DIM_2)
+            stddev=1./np.sqrt(self.FC_DIM_2)
         ))
 
-        self.b_fc_3 = tf.Variable(np.zeros(26).astype(np.float32))
+        b_fc_3 = tf.Variable(np.zeros(26).astype(np.float32))
 
-        # Scale and shift for batch normalization
-        self.scale1 = tf.Variable(tf.ones([FC_DIM_1]))
-        self.beta1 = tf.Variable(tf.zeros([FC_DIM_1]))
-        self.scale2 = tf.Variable(tf.ones([FC_DIM_2]))
-        self.beta2 = tf.Variable(tf.zeros([FC_DIM_2]))
+        input_layer = tf.reshape(inputs, [-1, 28, 28, 1])
 
-
-        self.input_layer = tf.reshape(self.inputs, [-1, 28, 28, 1])
-
-        h_conv_1 = tf.nn.relu(tf.nn.conv2d(
-            input=self.input_layer,
-            filter=self.W_conv_1,
+        z_conv_1 = tf.nn.conv2d(
+            input=input_layer,
+            filter=W_conv_1,
             strides=[1, 1, 1, 1],
             padding='SAME'
-        ) + self.b_conv_1)
+        )
+        #bn_conv_1 = self.batch_normalization(z_conv_1, training)
+        h_conv_1 = tf.nn.relu(z_conv_1 + b_conv_1)
 
         h_pool_1 = tf.nn.max_pool(
             value=h_conv_1,
@@ -92,12 +89,14 @@ class NeuralNet(object):
             padding='SAME'
         )
 
-        h_conv_2 = tf.nn.relu(tf.nn.conv2d(
+        z_conv_2 = tf.nn.conv2d(
             input=h_pool_1,
-            filter=self.W_conv_2,
+            filter=W_conv_2,
             strides=[1, 1, 1, 1],
             padding='SAME'
-        ) + self.b_conv_2)
+        )
+        #bn_conv_2 = self.batch_normalization(z_conv_2, training)
+        h_conv_2 = tf.nn.relu(z_conv_2 + b_conv_2)
 
         h_pool_2 = tf.reshape(tf.nn.max_pool(
             value=h_conv_2,
@@ -106,41 +105,59 @@ class NeuralNet(object):
             padding='SAME'
         ), [-1, 7 * 7 * 64])
 
-        z_bn_1 = tf.matmul(h_pool_2, self.W_fc_1)
-        batch_mean_1, batch_var_1 = tf.nn.moments(z_bn_1, [0])
-        h_bn_1 = tf.nn.batch_normalization(
-            x=z_bn_1,
-            mean=batch_mean_1,
-            variance=batch_var_1,
-            offset=self.beta1,
-            scale=self.scale1,
-            variance_epsilon=epsilon
-        )
-        h_fc_1 = tf.nn.relu(h_bn_1 + self.b_fc_1)
-        h_drop_1 = tf.nn.dropout(h_fc_1, self.keep)
+        z_fc_1 = tf.matmul(h_pool_2, W_fc_1)
+        bn_fc_1 = self.batch_normalization(z_fc_1, training)
+        h_fc_1 = tf.nn.relu(bn_fc_1 + b_fc_1)
+        h_drop_1 = tf.nn.dropout(h_fc_1, keep)
 
-        z_bn_2 = tf.matmul(h_drop_1, self.W_fc_2)
-        batch_mean_2, batch_var_2 = tf.nn.moments(z_bn_2, [0])
-        h_bn_2 = tf.nn.batch_normalization(
-            x=z_bn_2,
-            mean=batch_mean_2,
-            variance=batch_var_2,
-            offset=self.beta2,
-            scale=self.scale2,
-            variance_epsilon=epsilon
-        )
+        z_fc_2 = tf.matmul(h_drop_1, W_fc_2)
+        bn_fc_2 = self.batch_normalization(z_fc_2, training)
 
-        h_fc_2 = tf.nn.relu(h_bn_2 + self.b_fc_2)
-        h_drop_2 = tf.nn.dropout(h_fc_2, self.keep)
+        h_fc_2 = tf.nn.relu(bn_fc_2 + b_fc_2)
+        h_drop_2 = tf.nn.dropout(h_fc_2, keep)
 
-        logits = tf.matmul(h_drop_2, self.W_fc_3) + self.b_fc_3
-        cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
-            logits=logits, labels=self.labels
+        logits = tf.matmul(h_drop_2, W_fc_3) + b_fc_3
+        loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
+            logits=logits, labels=labels
         ))
 
-        self.saver = tf.train.Saver()
-        self.predict = logits
-        return cost
+        regularizers = (
+            tf.nn.l2_loss(W_conv_1) + tf.nn.l2_loss(b_conv_1) +
+            tf.nn.l2_loss(W_conv_2) + tf.nn.l2_loss(b_conv_2) +
+            tf.nn.l2_loss(W_fc_1) + tf.nn.l2_loss(b_fc_1) +
+            tf.nn.l2_loss(W_fc_2) + tf.nn.l2_loss(b_fc_2) +
+            tf.nn.l2_loss(W_fc_3) + tf.nn.l2_loss(b_fc_3)
+        )
+
+        new_loss = loss + self.lamb * regularizers
+
+        train = tf.train.AdamOptimizer(1e-4).minimize(new_loss)
+
+        return inputs, labels, keep, train, loss, logits, tf.train.Saver()
+
+    def batch_normalization(self, inputs, training, decay=0.999):
+
+        # Shape and scale
+        scale = tf.Variable(tf.ones([inputs.get_shape()[-1]]))
+        beta = tf.Variable(tf.zeros([inputs.get_shape()[-1]]))
+
+        mean = tf.Variable(tf.zeros([inputs.get_shape()[-1]]),
+                               trainable=False)
+        var = tf.Variable(tf.ones([inputs.get_shape()[-1]]),
+                              trainable=False)
+
+        if training:
+            batch_mean, batch_var = tf.nn.moments(inputs, [0])
+            train_mean = tf.assign(mean,
+                                   mean * decay + batch_mean * (1 - decay))
+            train_var = tf.assign(var, var * decay + batch_var * (1 - decay))
+            with tf.control_dependencies([train_mean, train_var]):
+                return tf.nn.batch_normalization(inputs,
+                                                 batch_mean, batch_var, beta,
+                                                 scale, self.epsilon)
+        else:
+            return tf.nn.batch_normalization(inputs, mean, var, beta,
+                                             scale, self.epsilon)
 
     def get_data(self):
         shuffle = np.load('data.npy')
@@ -166,24 +183,13 @@ class NeuralNet(object):
 
         return batch_generator, vx, vy
 
-    def train(self, num_epochs=2., batch_size=100, keep_prob=1.):
+    def train(self, num_epochs=2., batch_size=100, keep_prob=1., resume=True):
 
-        loss = self.initialize()
-        """
-        regularizers = (
-            tf.nn.l2_loss(self.W_conv_1) + tf.nn.l2_loss(self.b_conv_1) +
-            tf.nn.l2_loss(self.W_conv_2) + tf.nn.l2_loss(self.b_conv_2) +
-            tf.nn.l2_loss(self.W_fc_1) + tf.nn.l2_loss(self.b_fc_1) +
-            tf.nn.l2_loss(self.W_fc_2) + tf.nn.l2_loss(self.b_fc_2) +
-            tf.nn.l2_loss(self.W_fc_3) + tf.nn.l2_loss(self.b_fc_3)
-        )"""
-        regularizers = 0
+        tf.reset_default_graph()
 
-        new_loss = loss + self.lamb * regularizers
+        inputs, labels, keep, train, loss, logits, saver = self.build_graph(True)
 
 
-        #train = tf.train.MomentumOptimizer(10e-4, 0.9).minimize(loss)
-        train = tf.train.AdamOptimizer(1e-4).minimize(new_loss)
 
         batch_generator, vx, vy = self.get_data()
 
@@ -194,35 +200,55 @@ class NeuralNet(object):
         with tf.Session() as session:
             session.run(init)
 
+            if resume:
+                saver.restore(session, self.save_file)
+
             for i in xrange(int(100000. * num_epochs / batch_size)):
                 batch_x, batch_y = next(batch_gen)
 
                 if i%100 == 0:
-                    train_pred = session.run(self.predict, {
-                        self.inputs: batch_x,
-                        self.labels: batch_y,
-                        self.keep: 1.
+                    train_pred = session.run(logits, {
+                        inputs: batch_x,
+                        labels: batch_y,
+                        keep: 1.
                     })
                     train_err = error(np.argmax(train_pred, 1),
                                       np.argmax(batch_y, 1))
                     print i, 1 - train_err
 
                 train.run({
-                    self.inputs: batch_x,
-                    self.labels: batch_y,
-                    self.keep: keep_prob
+                    inputs: batch_x,
+                    labels: batch_y,
+                    keep: keep_prob
                 })
 
                 #self.saver.save(session, 'model-1')
                 if i % 1000 == 999:
-                    validation_pred = session.run(self.predict, {
-                        self.inputs: vx,
-                        self.labels: vy,
-                        self.keep: 1.
+                    validation_pred = session.run(logits, {
+                        inputs: vx,
+                        labels: vy,
+                        keep: 1.
                     })
                     validation_err = error(np.argmax(validation_pred, 1),
                                            np.argmax(vy, 1))
                     print 'validation acc:', 1 - validation_err
+
+            saver.save(session, self.save_file)
+
+    def predict(self, data):
+        tf.reset_default_graph()
+        inputs, labels, keep, train, loss, logits, saver = self.build_graph(
+            False)
+
+
+        with tf.Session() as session:
+            session.run(tf.global_variables_initializer())
+            saver.restore(session, self.save_file)
+            predictions = session.run(logits, {
+                inputs: data,
+                keep: 1,
+                labels: None # need some fake labels?
+            })
 
 
 
