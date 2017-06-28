@@ -247,9 +247,9 @@ class NeuralNet(object):
             predictions = session.run(logits, {
                 inputs: data,
                 keep: 1,
-                labels: None # need some fake labels?
+                labels: np.array([[0] * 26] * len(data[0]))
             })
-
+        return predictions
 
 
 

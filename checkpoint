@@ -1,2 +1,2 @@
-model_checkpoint_path: "neural-net-model"
-all_model_checkpoint_paths: "neural-net-model"
+model_checkpoint_path: "no-reg"
+all_model_checkpoint_paths: "no-reg"

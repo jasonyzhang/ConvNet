@@ -1,4 +1,9 @@
 2017 06 26
+2 default conv/pool + 1024 fc (bn/elu) + 512 fc (bn/elu)
+validation accuracy: 93.4 after 6 epochs
+
+
+2017 06 26
 2 default conv/pool + 1024 fc (bn/relu) + 512 fc (bn/relu)
 validation accuracy: 93.8 after 6 epochs
 
