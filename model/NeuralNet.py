@@ -174,7 +174,7 @@ class NeuralNet(object):
 
     def get_data(self):
         shuffle = np.load('data.npy')
-        data = loadmat("letters_data.mat")
+        data = loadmat('data/letters_data.mat')
         train_x = data['train_x']
 
 
@@ -189,7 +189,7 @@ class NeuralNet(object):
 
         if self.use_augmented:
             print 'Using augmented data'
-            training_data = loadmat("augmented_data_compressed.mat")
+            training_data = loadmat('data/augmented_data_compressed.mat')
             tx = training_data['tx']
             ty = training_data['ty']
             print 'done loading'

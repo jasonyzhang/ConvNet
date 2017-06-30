@@ -3,7 +3,8 @@ from flask import Flask, jsonify, render_template, request
 
 from model.NeuralNet import NeuralNet
 
-neural_net = NeuralNet('augmented_data', 0.)
+neural_net = NeuralNet('model/checkpoints/no-reg', 0.)
+#neural_net = NeuralNet('model/checkpoints/augmented_data', 0.)
 
 def softmax(x):
     """Compute softmax values for each sets of scores in x."""
@@ -13,7 +14,6 @@ def softmax(x):
 
 def convolutional(input):
     prediction = softmax(neural_net.predict(input*256)[0])
-    print prediction
     return np.around(prediction, 3).tolist()
 
 
@@ -22,8 +22,8 @@ def convolutional(input):
 app = Flask(__name__)
 
 
-@app.route('/api/mnist', methods=['POST'])
-def mnist():
+@app.route('/api/query', methods=['POST'])
+def query():
     input = ((255 - np.array(request.json, dtype=np.uint8)) / 255.0).reshape(1, 784)
     output = convolutional(input)
     return jsonify(results=[output])
