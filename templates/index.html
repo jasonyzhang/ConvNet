@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Classifying Letters</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+    <script type="text/javascript" src="{{ url_for('static', filename='js/jquery.min.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='js/main.js') }}"></script>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Classifying Letters</h1>
+      <div class="row">
+        <div class="col-md-6">
+          <p>draw a letter here!</p>
+          <canvas id="main"></canvas>
+          <p>
+            <button id="clear" class="btn btn-default">clear</button>
+          </p>
+          <p>input:</p>
+          <canvas id="input" style="border:1px solid" width="140" height="140"></canvas>
+        </div>
+        <div class="col-md-6">
+          <hr>
+          <p>output:</p>
+          <table id="output" class="table">
+            <tr>
+              <th class="col-md-1"></th>
+              <th class="col-md-2">probability</th>
+              <th class="col-md-1"></th>
+              <th class="col-md-2">probability</th>
+            </tr>
+            <tr>
+              <th id="t0">A</th>
+              <td id="0"></td>
+              <th id="t13">N</th>
+              <td id="13"></td>
+            </tr>
+            <tr>
+              <th id="t1">B</th>
+              <td id="1"></td>
+              <th id="t14">O</th>
+              <td id="14"></td>
+            </tr>
+            <tr>
+              <th id="t2">C</th>
+              <td id="2"></td>
+              <th id="t15">P</th>
+              <td id="15"></td>
+            </tr>
+            <tr>
+              <th id="t3">D</th>
+              <td id="3"></td>
+              <th id="t16">Q</th>
+              <td id="16"></td>
+            </tr>
+            <tr>
+              <th id="t4">E</th>
+              <td id="4"></td>
+              <th id="t17">R</th>
+              <td id="17"></td>
+            </tr>
+            <tr>
+              <th id="t5">F</th>
+              <td id="5"></td>
+              <th id="t18">S</th>
+              <td id="18"></td>
+            </tr>
+            <tr>
+              <th id="t6">G</th>
+              <td id="6"></td>
+              <th id="t19">T</th>
+              <td id="19"></td>
+            </tr>
+            <tr>
+              <th id="t7">H</th>
+              <td id="7"></td>
+              <th id="t20">U</th>
+              <td id="20"></td>
+            </tr>
+            <tr>
+              <th id="t8">I</th>
+              <td id="8"></td>
+              <th id="t21">V</th>
+              <td id="21"></td>
+            </tr>
+            <tr>
+              <th id="t9">J</th>
+              <td id="9"></td>
+              <th id="t22">W</th>
+              <td id="22"></td>
+            </tr>
+            <tr>
+              <th id="t10">K</th>
+              <td id="10"></td>
+              <th id="t23">X</th>
+              <td id="23"></td>
+            </tr>
+            <tr>
+              <th id="t11">L</th>
+              <td id="11"></td>
+              <th id="t24">Y</th>
+              <td id="24"></td>
+            </tr>
+            <tr>
+              <th id="t12">M</th>
+              <td id="12"></td>
+              <th id="t25">Z</th>
+              <td id="25"></td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
