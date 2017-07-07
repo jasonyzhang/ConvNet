@@ -3,8 +3,13 @@ from flask import Flask, jsonify, render_template, request
 
 from model.NeuralNet import NeuralNet
 
-neural_net = NeuralNet('model/checkpoints/no-reg', 0.)
-#neural_net = NeuralNet('model/checkpoints/augmented_data', 0.)
+neural_nets = [
+    (NeuralNet('model/checkpoints/no-reg', 0.), 256.),
+    (NeuralNet('model/checkpoints/0.02', 0.02), 1.),
+    (NeuralNet('model/checkpoints/lamb29', 0.02), 1.),
+]
+# neural_net = NeuralNet('model/checkpoints/augmented_data', 0.)
+
 
 def softmax(x):
     """Compute softmax values for each sets of scores in x."""
@@ -12,9 +17,25 @@ def softmax(x):
     return e_x / e_x.sum()
 
 
-def convolutional(input):
-    prediction = softmax(neural_net.predict(input*256)[0])
-    return np.around(prediction, 3).tolist()
+def convolutional(input, ensemble):
+    if np.sum(input) == 0:
+        return [0] * 26, [' '] * len(ensemble)
+
+    probabilities = []
+    predictions = []
+    for i in range(len(ensemble)):
+        if ensemble[i]:
+            pred = softmax(neural_nets[i][0].predict(input * neural_nets[i][1])[0])
+            probabilities.append(pred)
+            predictions.append(chr(ord('A') + np.argmax(pred)))
+        else:
+            predictions.append(' ')
+
+    if probabilities:
+        probability = np.around(sum(probabilities) / len(probabilities), 3).tolist()
+    else:
+        probability = [0] * 26
+    return probability, predictions
 
 
 
@@ -24,9 +45,12 @@ app = Flask(__name__)
 
 @app.route('/api/query', methods=['POST'])
 def query():
-    input = ((255 - np.array(request.json, dtype=np.uint8)) / 255.0).reshape(1, 784)
-    output = convolutional(input)
-    return jsonify(results=[output])
+
+    req = request.json
+    inp = ((255 - np.array(req['inputs'], dtype=np.uint8)) / 255.0).reshape(1, 784)
+    probability, predictions = convolutional(inp, req['ensemble'])
+    print predictions
+    return jsonify(probability=probability, predictions=predictions)
 
 
 @app.route('/')

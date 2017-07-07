@@ -85,10 +85,19 @@ class Main {
                 url: '/api/query',
                 method: 'POST',
                 contentType: 'application/json',
-                data: JSON.stringify(inputs),
+                data: JSON.stringify({
+                    'inputs': inputs,
+                    'ensemble': [
+                        document.getElementById('nn1').checked,
+                        document.getElementById('nn2').checked,
+                        document.getElementById('nn3').checked
+                    ]
+                }),
                 success: function (data) {
-                    console.log('test');
-                    var arr = data.results[0];
+                    //console.log('test');
+                    console.log(data);
+                    var arr = data.probability;
+                    var pred = data.predictions;
 
                     var max = 0;
                     var max_index = 0;
@@ -100,7 +109,7 @@ class Main {
                             max = value;
                             max_index = j;
                         }
-                        console.log(j, value);
+                        //console.log(j, value);
                         $('#' + j).text(value.toString());
                     }
                     for (j = 0; j < 26; j++) {
@@ -109,6 +118,10 @@ class Main {
                         } else {
                             $('#' + j).removeClass('success');
                         }
+                    }
+
+                    for (i = 0; i < pred.length; i++) {
+                        $('#pred' + (i+1)).text(pred[i]);
                     }
 
                 }

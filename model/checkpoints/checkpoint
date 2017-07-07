@@ -1,2 +1,2 @@
-model_checkpoint_path: "no-reg"
-all_model_checkpoint_paths: "no-reg"
+model_checkpoint_path: "0.02"
+all_model_checkpoint_paths: "0.02"

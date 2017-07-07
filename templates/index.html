@@ -8,26 +8,49 @@
   </head>
   <body>
     <div class="container">
-      <h1>A Convolutional Neural Net to classify handwritten digits</h1>
+      <h2>A Convolutional Neural Net to classify handwritten digits</h2>
       <div class="row">
         <div class="col-md-6">
-          <p>Draw the letter here: (Make the letter large and centered)</p>
+          <p>Draw the letter here: (Make the letter large and centered!)
+            </p>
           <canvas id="main"></canvas>
-          <p>
-            <button id="clear" class="btn btn-default">clear</button>
-          </p>
-          <p>Perceived Input:</p>
-          <canvas id="input" style="border:1px solid" width="140" height="140"></canvas>
+
+          <div class="row">
+            <div class="col-md-4">
+              <p>Perceived Input:</p>
+              <canvas id="input" style="border:1px solid" width="140" height="140"></canvas>
+            </div>
+            <div class="col-md-3"><button id="clear" class="btn btn-default">clear</button></div>
+          </div>
         </div>
         <div class="col-md-6">
           <hr>
-          <p>Prediction:</p>
+          <table>
+            <tr>
+              <td class="col-md-1" align="left">Ensemble:</td>
+              <td class="col-md-2">
+                <input type="checkbox" id="nn1" checked> No Reg.</input>
+              </td>
+              <td class="col-md-2">
+                <input type="checkbox" id="nn2" checked> Low Reg.</input>
+              </td>
+              <td class="col-md-2">
+                <input type="checkbox" id="nn3" checked> High Reg.</input>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1">Guess:</td>
+              <td class="centered" id="pred1" style="text-align:center"> &nbsp;	 </td>
+              <td class="centered" id="pred2" style="text-align:center"> &nbsp;	 </td>
+              <td class="centered" id="pred3" style="text-align:center"> &nbsp;	 </td>
+            </tr>
+          </table>
           <table id="output" class="table">
             <tr>
               <th class="col-md-1"></th>
-              <th class="col-md-2">probability</th>
+              <th class="col-md-2">Probability</th>
               <th class="col-md-1"></th>
-              <th class="col-md-2">probability</th>
+              <th class="col-md-2">Probability</th>
             </tr>
             <tr>
               <th id="t0">A</th>
