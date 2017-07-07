@@ -9,9 +9,11 @@ class NeuralNet(object):
     :param str save_file: Name of save file.
     :param float lamb: Lambda for l2 regularization.
     :param float epsilon: Epsilon for batch normalization.
+    :param bool use_augmented: If True, uses training data augmented with transformations.
+    :param fn pre_fn: Preprocessing function for training data.
     """
 
-    def __init__(self, save_file, lamb=0., epsilon=1e-3, use_augmented=False):
+    def __init__(self, save_file, lamb=0., epsilon=1e-3, use_augmented=False, pre_fn=lambda x:x):
 
         self.save_file = save_file
         
@@ -27,6 +29,8 @@ class NeuralNet(object):
         self.epsilon = epsilon
 
         self.use_augmented = use_augmented
+
+        self.pre_fn = pre_fn
 
     def build_graph(self, training=True):
         """Builds the structure of the CNN.
@@ -173,7 +177,7 @@ class NeuralNet(object):
                                              scale, self.epsilon)
 
     def get_data(self):
-        shuffle = np.load('data.npy')
+        shuffle = np.load('data/data.npy')
         data = loadmat('data/letters_data.mat')
         train_x = data['train_x']
 
@@ -194,6 +198,9 @@ class NeuralNet(object):
             ty = training_data['ty']
             print 'done loading'
 
+        # Apply Pre-processing function
+        tx = self.pre_fn(tx)
+
         vx = train_x[shuffle][100000:]
         vy = train_y[shuffle][100000:]
 
@@ -205,7 +212,7 @@ class NeuralNet(object):
 
         return batch_generator, vx, vy
 
-    def train(self, num_epochs=2., batch_size=100, keep_prob=1., resume=True):
+    def train(self, num_epochs=2., batch_size=100, keep_prob=1., resume=True, log=True):
 
         tf.reset_default_graph()
 
@@ -223,6 +230,8 @@ class NeuralNet(object):
             if resume:
                 saver.restore(session, self.save_file)
 
+            validation_err = 1
+
             for i in xrange(int(100000. * num_epochs / batch_size)):
                 batch_x, batch_y = next(batch_gen)
 
@@ -235,7 +244,8 @@ class NeuralNet(object):
 
                     train_err = error(np.argmax(train_pred, 1),
                                       np.argmax(batch_y, 1))
-                    print i, 1 - train_err
+                    if log:
+                        print i, 1 - train_err
 
                 train.run({
                     inputs: batch_x,
@@ -256,6 +266,7 @@ class NeuralNet(object):
                     saver.save(session, self.save_file)
 
             saver.save(session, self.save_file)
+            return 1 - validation_err
 
     def predict(self, data):
         tf.reset_default_graph()
