@@ -10,33 +10,44 @@ class NeuralNet(object):
     :param float lamb: Lambda for l2 regularization.
     :param float epsilon: Epsilon for batch normalization.
     :param bool use_augmented: If True, uses training data augmented with transformations.
-    :param fn pre_fn: Preprocessing function for training data.
+    :param fn pre_fn: Preprocessing function for training data. Default is standardization.
     """
 
-    def __init__(self, save_file, lamb=0., epsilon=1e-3, use_augmented=False, pre_fn=lambda x:x):
+    def __init__(self, save_file, lamb=0., epsilon=1e-3, use_augmented=False, pre_fn=None):
 
         self.save_file = save_file
         
         # Hyper-parameters
+
         # Fully connected layers size
         self.FC_DIM_1 = 1024
         self.FC_DIM_2 = 512
 
-        # l2 regularization
+        # L2 regularization
         self.lamb = lamb
 
-        # batch normalization
+        # Batch normalization
         self.epsilon = epsilon
 
         self.use_augmented = use_augmented
 
-        self.pre_fn = pre_fn
+        if pre_fn:
+            self.pre_fn = pre_fn
+        else:
+            self.pre_fn = lambda x: ((x - np.mean(x)) / np.std(x))
 
     def build_graph(self, training=True):
         """Builds the structure of the CNN.
         
         :param bool training: If True, graph is built to train.
-        :return: 
+        :return inputs: Placeholder for input images of dimension Nx784.
+        :return labels: Placeholder for image labels of dimension Nx26.
+        :return keep: Placeholder for keep probability for dropout.
+        :return train: Training operation.
+        :return loss: Loss operation.
+        :return logits: Logit operation.
+        :return Saver: Saver object.
+        :rtype: (Placeholder, Placeholder, Placeholder, Operation, Operation, Operation, Saver)
         """
 
         # Variables
@@ -153,6 +164,13 @@ class NeuralNet(object):
         return inputs, labels, keep, train, loss, logits, tf.train.Saver()
 
     def batch_normalization(self, inputs, training, decay=0.999):
+        """Wrapper for creating a batch normalization layer.
+        
+        :param tensor inputs: Input layer.
+        :param bool training: If True, runs train operations.
+        :param float decay: Decay rate for exponential decay.
+        :return: Batch normalization layer.
+        """
 
         # Shape and scale
         scale = tf.Variable(tf.ones([inputs.get_shape()[-1]]))
@@ -177,9 +195,13 @@ class NeuralNet(object):
                                              scale, self.epsilon)
 
     def get_data(self):
+        """Retrieves saved data for training and validation.
+        
+        :return: Batch generator, Validation images, Validation labels
+        """
         shuffle = np.load('data/data.npy')
         data = loadmat('data/letters_data.mat')
-        train_x = data['train_x']
+        train_x = self.pre_fn(data['train_x'])
 
 
 
@@ -194,12 +216,9 @@ class NeuralNet(object):
         if self.use_augmented:
             print 'Using augmented data'
             training_data = loadmat('data/augmented_data_compressed.mat')
-            tx = training_data['tx']
+            tx = self.pre_fn(training_data['tx'])
             ty = training_data['ty']
             print 'done loading'
-
-        # Apply Pre-processing function
-        tx = self.pre_fn(tx)
 
         vx = train_x[shuffle][100000:]
         vy = train_y[shuffle][100000:]
@@ -283,7 +302,6 @@ class NeuralNet(object):
                 labels: np.array([[0] * 26] * len(data[0]))
             })
         return predictions
-
 
 
 def error(p, t):
